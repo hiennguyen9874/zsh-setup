@@ -50,7 +50,7 @@ Installer tự xử lý tên command `batcat` và `fdfind` trên Ubuntu/Debian, 
 | -------------------------------- | ---------- | ----------------------------------------------------------------------------------- | ---------------------------------------------------- | ---------------------- |
 | **Zsh native**                   | Shell      | Shell chính, history, completion, globbing, alias, function, key binding            | Gõ lệnh hằng ngày, dùng `Tab`, `↑/↓`, alias          | Bắt buộc               |
 | **Starship**                     | Prompt     | Hiển thị thư mục hiện tại, Git branch, Git status, thời gian chạy lệnh, Python venv | Tự động hiển thị trên prompt                         | Nên dùng               |
-| **zsh-autosuggestions**          | Plugin Zsh | Gợi ý lệnh dựa trên history hoặc completion                                         | Gõ một phần lệnh, nhấn `→` hoặc `Ctrl+Space` để nhận | Rất nên dùng           |
+| **zsh-autosuggestions**          | Plugin Zsh | Gợi ý lệnh dựa trên history hoặc completion                                         | `→` nhận toàn bộ; `Ctrl+→` nhận từng phần            | Rất nên dùng           |
 | **zsh-syntax-highlighting**      | Plugin Zsh | Tô màu lệnh hợp lệ, lệnh sai, chuỗi, option, đường dẫn                              | Gõ lệnh và quan sát màu trực tiếp                    | Rất nên dùng           |
 | **zsh-completions**              | Plugin Zsh | Bổ sung completion cho nhiều command ngoài bộ mặc định của Zsh                      | Gõ `command --<Tab>`                                 | Nên dùng               |
 | **fzf-tab**                      | Plugin Zsh | Thay menu completion thông thường bằng giao diện fuzzy search                       | Gõ `cd <Tab>`, `git checkout <Tab>`                  | Nên dùng               |
@@ -99,9 +99,14 @@ Installer tự xử lý tên command `batcat` và `fdfind` trên Ubuntu/Debian, 
 | `Alt+C`      | Tìm và chuyển thư mục                    | `fzf` + `fd`                   |
 | `↑`          | Tìm command trước đó khớp chuỗi đang gõ  | `zsh-history-substring-search` |
 | `↓`          | Tìm command tiếp theo khớp chuỗi đang gõ | `zsh-history-substring-search` |
-| `→`          | Nhận từng phần autosuggestion            | `zsh-autosuggestions`          |
-| `Ctrl+Space` | Nhận toàn bộ autosuggestion              | `zsh-autosuggestions`          |
-| `Ctrl+A`     | Di chuyển về đầu dòng                    | Zsh/Emacs keymap               |
+| `→`          | Nhận toàn bộ autosuggestion                            | `zsh-autosuggestions`          |
+| `Ctrl+→`     | Nhận/di chuyển tới từ hoặc thành phần đường dẫn kế tiếp | `zsh-autosuggestions` / Zsh    |
+| `Ctrl+←`     | Di chuyển lùi một từ hoặc thành phần đường dẫn          | Zsh                            |
+| `Alt+F`      | Tương tự `Ctrl+→`                                      | `zsh-autosuggestions` / Zsh    |
+| `Alt+B`      | Tương tự `Ctrl+←`                                      | Zsh                            |
+| `Alt+Backspace` | Xóa từ hoặc thành phần đường dẫn phía trước          | Zsh                            |
+| `Ctrl+Space` | Nhận toàn bộ autosuggestion                            | `zsh-autosuggestions`          |
+| `Ctrl+A`     | Di chuyển về đầu dòng                                  | Zsh/Emacs keymap               |
 | `Ctrl+E`     | Di chuyển về cuối dòng                   | Zsh/Emacs keymap               |
 | `Ctrl+W`     | Xóa từ trước con trỏ                     | Zsh                            |
 | `Ctrl+U`     | Xóa từ đầu dòng đến con trỏ              | Zsh                            |
@@ -213,6 +218,10 @@ print -l $fpath | grep zsh-completions
 ```
 
 Thử completion bằng `cd <Tab>`, tìm history bằng `Ctrl+R`, hoặc gõ một phần lệnh cũ rồi nhấn `↑`.
+
+Để kiểm tra partial accept, gõ phần đầu của một lệnh có đường dẫn đang hiện màu xám rồi nhấn `Ctrl+→`. Mỗi lần nhấn sẽ nhận thêm một từ hoặc một thành phần đường dẫn. Cấu hình loại `/` khỏi `WORDCHARS`, nên các thao tác di chuyển và xóa theo từ khác của Zsh cũng sẽ dừng ở ranh giới thư mục.
+
+Một số terminal gửi escape sequence khác cho `Ctrl+→` và `Ctrl+←`. Installer hỗ trợ hai dạng phổ biến (`^[[1;5C`/`^[[1;5D` và `^[[5C`/`^[[5D`); `Alt+F`/`Alt+B` là phím thay thế.
 
 ## Cập nhật
 

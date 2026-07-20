@@ -308,8 +308,22 @@ if [[ -r "$ZSH_PLUGIN_DIR/zsh-autosuggestions/zsh-autosuggestions.zsh" ]]; then
     ZSH_AUTOSUGGEST_STRATEGY=(history completion)
     ZSH_AUTOSUGGEST_BUFFER_MAX_SIZE=20
     source "$ZSH_PLUGIN_DIR/zsh-autosuggestions/zsh-autosuggestions.zsh"
+
+    # Exclude "/" so word-oriented widgets stop at path components.
+    WORDCHARS='*?_-.[]~=&;!#$%^(){}<>'
+
     bindkey '^[[C' forward-char
     bindkey '^ ' autosuggest-accept
+
+    bindkey '^[[1;5C' forward-word
+    bindkey '^[[5C' forward-word
+    bindkey '^[f' forward-word
+
+    bindkey '^[[1;5D' backward-word
+    bindkey '^[[5D' backward-word
+    bindkey '^[b' backward-word
+
+    bindkey '^[^?' backward-kill-word
 fi
 
 if [[ -r "$ZSH_PLUGIN_DIR/zsh-syntax-highlighting/zsh-syntax-highlighting.zsh" ]]; then
