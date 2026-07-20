@@ -146,7 +146,8 @@ normalize_cli_names() {
 }
 
 install_plugin() {
-    local name=$1 url=$2 destination="$PLUGIN_DIR/$name"
+    local name=$1 url=$2
+    local destination="$PLUGIN_DIR/$name"
     if [[ -d "$destination/.git" ]]; then
         info "Updating $name..."
         git -C "$destination" pull --ff-only
