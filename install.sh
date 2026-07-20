@@ -70,7 +70,7 @@ show_plan() {
 
 backup_existing_config() {
     BACKUP_DIR="$HOME/zsh-backup-$(date +%Y%m%d-%H%M%S)"
-    mkdir -p "$BACKUP_DIR"
+    install -d -m 0700 "$BACKUP_DIR"
 
     local source relative
     for source in \
@@ -89,7 +89,8 @@ backup_existing_config() {
         cp -a -- "$source" "$BACKUP_DIR/$relative"
     done
 
-    success "Backup created: $BACKUP_DIR"
+    chmod -R go-rwx -- "$BACKUP_DIR"
+    success "Private backup created: $BACKUP_DIR"
 }
 
 has_legacy_config() {
