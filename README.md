@@ -12,7 +12,7 @@ A small, interactive Linux installer for a fast Zsh environment with:
 Run as your normal user, not with `sudo`:
 
 ```bash
-curl -fsSL https://raw.githubusercontent.com/hiennguyen9874/zsh-setup/main/install.sh | bash
+curl -fsSL https://github.com/hiennguyen9874/zsh-setup/raw/refs/heads/main/install.sh | bash
 ```
 
 The installer shows its plan and asks for confirmation before making changes. Review [`install.sh`](install.sh) before piping it into Bash.
