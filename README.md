@@ -3,8 +3,8 @@
 A small, interactive Linux installer for a fast Zsh environment with:
 
 - Native Zsh completion and history
-- [zsh-autosuggestions](https://github.com/zsh-users/zsh-autosuggestions)
-- [zsh-syntax-highlighting](https://github.com/zsh-users/zsh-syntax-highlighting)
+- `zsh-completions`, `fzf-tab`, autosuggestions, syntax highlighting, and history substring search
+- `fzf`, `zoxide`, `bat`, `fd`, and `ripgrep`
 - [Starship](https://starship.rs/) with a minimal, Nerd Font-free prompt
 
 ## Install
@@ -29,11 +29,12 @@ The installer requires an interactive terminal and `sudo`. It uses `sudo` only t
 
 1. Backs up existing Zsh, Oh My Zsh, Powerlevel10k, and Starship configuration.
 2. Optionally removes backed-up Oh My Zsh and Powerlevel10k files.
-3. Installs Zsh, Git, and Curl using the system package manager.
-4. Installs the two Zsh plugins under `~/.local/share/zsh/plugins`.
-5. Installs Starship under `~/.local/bin`.
-6. Writes a minimal `~/.zshrc` and `~/.config/starship.toml`.
-7. Sets Zsh as the default shell.
+3. Installs Zsh, Git, Curl, fzf, zoxide, bat, fd, and ripgrep.
+4. Installs five focused Zsh plugins under `~/.local/share/zsh/plugins`.
+5. Normalizes Debian's `batcat` and `fdfind` command names when needed.
+6. Installs Starship under `~/.local/bin`.
+7. Writes and validates `~/.zshrc` and `~/.config/starship.toml`.
+8. Sets Zsh as the default shell.
 
 Backups are stored in `~/zsh-backup-YYYYMMDD-HHMMSS`. Restore personal exports, aliases, and development-tool initialization from the backup after installation.
 

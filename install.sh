@@ -60,9 +60,9 @@ show_plan() {
     printf '\n%bMinimal Zsh setup%b\n' "$BOLD" "$RESET"
     printf 'Source: %s\n\n' "$REPO_URL"
     printf '  1. Back up existing Zsh, Oh My Zsh, Powerlevel10k, and Starship files\n'
-    printf '  2. Install Zsh, Git, and Curl with sudo (%s)\n' "$PACKAGE_MANAGER"
-    printf '  3. Install zsh-autosuggestions and zsh-syntax-highlighting\n'
-    printf '  4. Install Starship in ~/.local/bin\n'
+    printf '  2. Install Zsh and modern CLI tools with sudo (%s)\n' "$PACKAGE_MANAGER"
+    printf '  3. Install five focused Zsh plugins\n'
+    printf '  4. Install and configure Starship, fzf, zoxide, bat, fd, and ripgrep\n'
     printf '  5. Replace ~/.zshrc and ~/.config/starship.toml\n'
     printf '  6. Set Zsh as the default shell\n\n'
     warn 'Review your backup afterward and restore any personal exports, aliases, or tool initialization.'
@@ -116,16 +116,33 @@ install_system_packages() {
     case "$PACKAGE_MANAGER" in
         apt)
             sudo apt-get update
-            sudo apt-get install -y zsh git curl
+            sudo apt-get install -y zsh git curl fzf bat fd-find ripgrep
+            sudo apt-get install -y zoxide || install_zoxide
             ;;
         dnf)
-            sudo dnf install -y zsh git curl
+            sudo dnf install -y zsh git curl fzf zoxide bat fd-find ripgrep
             ;;
         pacman)
-            sudo pacman -S --needed zsh git curl
+            sudo pacman -S --needed zsh git curl fzf zoxide bat fd ripgrep
             ;;
     esac
-    success 'Installed Zsh, Git, and Curl.'
+    normalize_cli_names
+    success 'Installed Zsh, Git, Curl, fzf, zoxide, bat, fd, and ripgrep.'
+}
+
+install_zoxide() {
+    warn 'zoxide is unavailable from APT; using its official user installer.'
+    curl -fsSL https://raw.githubusercontent.com/ajeetdsouza/zoxide/main/install.sh | sh
+}
+
+normalize_cli_names() {
+    mkdir -p "$HOME/.local/bin"
+    if ! command -v bat >/dev/null 2>&1 && command -v batcat >/dev/null 2>&1; then
+        ln -sf "$(command -v batcat)" "$HOME/.local/bin/bat"
+    fi
+    if ! command -v fd >/dev/null 2>&1 && command -v fdfind >/dev/null 2>&1; then
+        ln -sf "$(command -v fdfind)" "$HOME/.local/bin/fd"
+    fi
 }
 
 install_plugin() {
@@ -143,10 +160,16 @@ install_plugin() {
 
 install_plugins() {
     mkdir -p "$PLUGIN_DIR"
+    install_plugin zsh-completions \
+        https://github.com/zsh-users/zsh-completions.git
+    install_plugin fzf-tab \
+        https://github.com/Aloxaf/fzf-tab.git
     install_plugin zsh-autosuggestions \
         https://github.com/zsh-users/zsh-autosuggestions.git
     install_plugin zsh-syntax-highlighting \
         https://github.com/zsh-users/zsh-syntax-highlighting.git
+    install_plugin zsh-history-substring-search \
+        https://github.com/zsh-users/zsh-history-substring-search.git
     success 'Installed Zsh plugins.'
 }
 
@@ -163,7 +186,7 @@ write_zshrc() {
     local temp_file
     temp_file=$(mktemp "$HOME/.zshrc.XXXXXX")
     cat > "$temp_file" <<'ZSHRC'
-# Minimal Zsh: native features + autosuggestions + syntax highlighting + Starship.
+# Minimal Zsh with focused plugins, modern CLI tools, and Starship.
 
 typeset -U path PATH
 path=("$HOME/.local/bin" "$HOME/bin" $path)
@@ -184,11 +207,10 @@ bindkey '^[[1~' beginning-of-line
 bindkey '^[[4~' end-of-line
 bindkey '^[[3~' delete-char
 
-autoload -Uz up-line-or-beginning-search down-line-or-beginning-search
-zle -N up-line-or-beginning-search
-zle -N down-line-or-beginning-search
-bindkey '^[[A' up-line-or-beginning-search
-bindkey '^[[B' down-line-or-beginning-search
+ZSH_PLUGIN_DIR="$HOME/.local/share/zsh/plugins"
+if [[ -d "$ZSH_PLUGIN_DIR/zsh-completions/src" ]]; then
+    fpath=("$ZSH_PLUGIN_DIR/zsh-completions/src" $fpath)
+fi
 
 autoload -Uz compinit
 ZSH_COMPDUMP="${XDG_CACHE_HOME:-$HOME/.cache}/zsh/zcompdump"
@@ -206,7 +228,9 @@ zstyle ':completion:*' matcher-list \
     'l:|=* r:|=*'
 zstyle ':completion:*' group-name ''
 zstyle ':completion:*:descriptions' format '%F{yellow}-- %d --%f'
-zstyle ':completion:*' list-colors "${(s.:.)LS_COLORS}"
+if [[ -n "$LS_COLORS" ]]; then
+    zstyle ':completion:*' list-colors "${(s.:.)LS_COLORS}"
+fi
 zstyle ':completion:*:*:*:*:processes' command \
     'ps -u $USER -o pid,user,comm -w -w'
 
@@ -229,9 +253,55 @@ alias gl='git log --oneline --graph --decorate -20'
 alias dc='docker compose'
 alias dps='docker ps'
 
+if command -v bat >/dev/null 2>&1; then
+    alias bcat='bat --paging=never'
+fi
+if command -v fd >/dev/null 2>&1; then
+    alias ff='fd'
+fi
+if command -v rg >/dev/null 2>&1; then
+    alias rgi='rg --hidden --glob "!.git"'
+fi
+
 # Add personal environment setup (CUDA, Go, Rust, Conda, etc.) here.
 
-ZSH_PLUGIN_DIR="$HOME/.local/share/zsh/plugins"
+if command -v fd >/dev/null 2>&1; then
+    export FZF_DEFAULT_COMMAND='fd --type f --hidden --follow --exclude .git'
+    export FZF_CTRL_T_COMMAND="$FZF_DEFAULT_COMMAND"
+    export FZF_ALT_C_COMMAND='fd --type d --hidden --follow --exclude .git'
+fi
+export FZF_DEFAULT_OPTS='--height=60% --layout=reverse --border --info=inline --cycle'
+if command -v bat >/dev/null 2>&1; then
+    export FZF_CTRL_T_OPTS='--preview "bat --color=always --style=numbers --line-range=:300 {}" --preview-window=right:60%'
+fi
+export FZF_ALT_C_OPTS='--preview "ls --color=always -A {} 2>/dev/null" --preview-window=right:60%'
+
+if command -v fzf >/dev/null 2>&1; then
+    if fzf --zsh >/dev/null 2>&1; then
+        source <(fzf --zsh)
+    else
+        [[ -r /usr/share/doc/fzf/examples/key-bindings.zsh ]] &&
+            source /usr/share/doc/fzf/examples/key-bindings.zsh
+        [[ -r /usr/share/doc/fzf/examples/completion.zsh ]] &&
+            source /usr/share/doc/fzf/examples/completion.zsh
+    fi
+fi
+
+if [[ -r "$ZSH_PLUGIN_DIR/fzf-tab/fzf-tab.plugin.zsh" ]]; then
+    source "$ZSH_PLUGIN_DIR/fzf-tab/fzf-tab.plugin.zsh"
+    zstyle ':fzf-tab:*' group-colors \
+        $'\033[1;33m' $'\033[1;34m' $'\033[1;35m' $'\033[1;36m'
+    zstyle ':fzf-tab:*' switch-group '<' '>'
+    zstyle ':fzf-tab:complete:cd:*' fzf-preview \
+        'ls --color=always -A $realpath 2>/dev/null'
+    zstyle ':fzf-tab:complete:*:*' fzf-preview \
+        'if [[ -d $realpath ]]; then
+             ls --color=always -A $realpath 2>/dev/null
+         elif command -v bat >/dev/null 2>&1; then
+             bat --color=always --style=numbers --line-range=:200 $realpath 2>/dev/null
+         fi'
+fi
+
 if [[ -r "$ZSH_PLUGIN_DIR/zsh-autosuggestions/zsh-autosuggestions.zsh" ]]; then
     ZSH_AUTOSUGGEST_HIGHLIGHT_STYLE='fg=8'
     ZSH_AUTOSUGGEST_STRATEGY=(history completion)
@@ -241,13 +311,27 @@ if [[ -r "$ZSH_PLUGIN_DIR/zsh-autosuggestions/zsh-autosuggestions.zsh" ]]; then
     bindkey '^ ' autosuggest-accept
 fi
 
-if command -v starship >/dev/null 2>&1; then
-    eval "$(starship init zsh)"
-fi
-
-# Keep syntax highlighting at or near the end of this file.
 if [[ -r "$ZSH_PLUGIN_DIR/zsh-syntax-highlighting/zsh-syntax-highlighting.zsh" ]]; then
     source "$ZSH_PLUGIN_DIR/zsh-syntax-highlighting/zsh-syntax-highlighting.zsh"
+fi
+
+if [[ -r "$ZSH_PLUGIN_DIR/zsh-history-substring-search/zsh-history-substring-search.zsh" ]]; then
+    source "$ZSH_PLUGIN_DIR/zsh-history-substring-search/zsh-history-substring-search.zsh"
+    bindkey '^[[A' history-substring-search-up
+    bindkey '^[[B' history-substring-search-down
+    bindkey '^[OA' history-substring-search-up
+    bindkey '^[OB' history-substring-search-down
+    HISTORY_SUBSTRING_SEARCH_HIGHLIGHT_FOUND='bg=green,fg=black,bold'
+    HISTORY_SUBSTRING_SEARCH_HIGHLIGHT_NOT_FOUND='bg=red,fg=white,bold'
+    HISTORY_SUBSTRING_SEARCH_ENSURE_UNIQUE=1
+fi
+
+if command -v zoxide >/dev/null 2>&1; then
+    eval "$(zoxide init zsh)"
+fi
+
+if command -v starship >/dev/null 2>&1; then
+    eval "$(starship init zsh)"
 fi
 ZSHRC
     chmod 0644 "$temp_file"
@@ -324,6 +408,7 @@ write_config() {
     mkdir -p "$CACHE_DIR/zsh"
     write_zshrc
     write_starship_config
+    rm -f "$CACHE_DIR/zsh/zcompdump"*
     zsh -n "$HOME/.zshrc"
     success 'Wrote and validated ~/.zshrc and ~/.config/starship.toml.'
 }
