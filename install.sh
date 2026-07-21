@@ -175,6 +175,17 @@ install_plugins() {
 }
 
 install_starship() {
+    local starship_path=''
+    starship_path=$(command -v starship 2>/dev/null) || true
+    if [[ -z "$starship_path" && -x "$HOME/.local/bin/starship" ]]; then
+        starship_path="$HOME/.local/bin/starship"
+    fi
+
+    if [[ -n "$starship_path" ]]; then
+        success "Starship is already installed ($starship_path); skipping."
+        return
+    fi
+
     info 'Installing Starship...'
     mkdir -p "$HOME/.local/bin"
 
