@@ -467,8 +467,16 @@ set_default_shell() {
         return
     fi
 
-    sudo chsh -s "$zsh_path" "$(id -un)"
-    success "Default shell changed to $zsh_path."
+    if [[ -e /.dockerenv || -e /run/.containerenv ]]; then
+        warn "Container detected; skipping the default-shell change. Run 'exec zsh' to start Zsh."
+        return
+    fi
+
+    if sudo chsh -s "$zsh_path" "$(id -un)"; then
+        success "Default shell changed to $zsh_path."
+    else
+        warn "Could not change the default shell. Run 'exec zsh' or change it manually later."
+    fi
 }
 
 main() {

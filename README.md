@@ -15,7 +15,7 @@ Installer sẽ hiển thị kế hoạch và yêu cầu xác nhận trước khi
 Script chỉ dùng `sudo` để:
 
 - cài package hệ thống;
-- đặt Zsh làm shell mặc định.
+- thử đặt Zsh làm shell mặc định khi không chạy trong container.
 
 Cấu hình cũ được sao lưu riêng tư tại:
 
@@ -24,6 +24,46 @@ Cấu hình cũ được sao lưu riêng tư tại:
 ```
 
 Không nên sao chép toàn bộ `.zshrc` cũ trở lại vì có thể khôi phục Oh My Zsh, Powerlevel10k hoặc cấu hình xung đột. Chỉ chuyển các alias, biến môi trường và thiết lập cá nhân còn cần thiết. Không lưu API key hoặc token trực tiếp trong `.zshrc`.
+
+## Cài đặt trong container
+
+Container cần dùng Ubuntu/Debian, Fedora hoặc Arch Linux, có user thường được phép chạy `sudo`, và được mở với TTY. Không chạy installer bằng `root`.
+
+Ví dụ với container đang chạy:
+
+```bash
+docker exec -it --user jovyan <container> bash
+curl -fsSL https://github.com/hiennguyen9874/zsh-setup/raw/refs/heads/main/install.sh | bash
+exec zsh -l
+```
+
+Thay `jovyan` và `<container>` bằng user và tên hoặc ID container thực tế. Installer nhận biết Docker/Podman qua `/.dockerenv` hoặc `/run/.containerenv`, nên sẽ bỏ qua `chsh`; điều này tránh lỗi `chsh: PAM: Authentication failure` thường gặp với user container không có mật khẩu cục bộ.
+
+Lệnh `exec zsh -l` chỉ áp dụng cho terminal hiện tại. Cách ưu tiên để đặt Zsh lâu dài là cài package và cấu hình ngay trong image. Installer hiện cần TTY và xác nhận tương tác, nên không phù hợp để gọi trực tiếp trong một lệnh `RUN`. Sau khi bước build của image đã cài `/usr/bin/zsh`, có thể đặt login shell bằng:
+
+```dockerfile
+USER root
+RUN usermod --shell /usr/bin/zsh jovyan
+USER jovyan
+```
+
+Sau đó rebuild image và tạo lại container. Lưu ý Docker không tự dùng login shell cho mọi `CMD` hoặc `docker exec`; khi cần, khởi động Zsh rõ ràng bằng:
+
+```bash
+docker exec -it --user jovyan <container> zsh -l
+```
+
+Nếu không thể sửa image hoặc `/etc/passwd`, có thể dùng `~/.bashrc` làm phương án cuối. Sao lưu file trước, rồi thêm:
+
+```bash
+if [[ $- == *i* ]] && command -v zsh >/dev/null 2>&1; then
+    exec "$(command -v zsh)" -l
+fi
+```
+
+Không cần đặt lại biến `SHELL`. Cách này thay mọi Bash tương tác bằng Zsh, vì vậy nên giữ khả năng xóa đoạn trên từ một shell không đọc `~/.bashrc`, ví dụ `bash --norc`.
+
+Các file trong filesystem của container sẽ mất khi container bị xóa nếu không nằm trong image hoặc volume. Để giữ cấu hình giữa các lần tạo container, mount hoặc copy ít nhất `~/.zshrc`, `~/.config/starship.toml`, `~/.local/bin` và `~/.local/share/zsh` phù hợp với cách quản lý image của bạn.
 
 ## Thành phần được cài đặt
 
