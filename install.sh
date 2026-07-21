@@ -177,8 +177,27 @@ install_plugins() {
 install_starship() {
     info 'Installing Starship...'
     mkdir -p "$HOME/.local/bin"
-    curl -fsSL https://starship.rs/install.sh | \
-        sh -s -- -y -b "$HOME/.local/bin"
+
+    local installer
+    installer=$(mktemp)
+    if ! curl -fsSL https://starship.rs/install.sh -o "$installer"; then
+        rm -f -- "$installer"
+        die 'Failed to download the Starship installer.'
+    fi
+
+    if ! sh "$installer" -y -b "$HOME/.local/bin"; then
+        warn "Starship installation with 'sh' failed; retrying with 'dash'."
+        if ! command -v dash >/dev/null 2>&1; then
+            rm -f -- "$installer"
+            die "Starship installation failed and 'dash' is unavailable."
+        fi
+        if ! dash "$installer" -y -b "$HOME/.local/bin"; then
+            rm -f -- "$installer"
+            die 'Starship installation failed with both sh and dash.'
+        fi
+    fi
+
+    rm -f -- "$installer"
     "$HOME/.local/bin/starship" --version
     success 'Installed Starship.'
 }
